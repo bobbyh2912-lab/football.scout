@@ -1,47 +1,256 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Football AI Scout</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
+// ===============================
+// EXPANDED FOOTBALL SCOUT ENGINE
+// GitHub Pages version (no backend)
+// ===============================
 
-<h1>⚽ Football AI Scout (GitHub Pages Edition)</h1>
+// ---------- PLAYER DATABASE (expanded realism-lite dataset)
+const PLAYERS = [
+  // Premier League
+  {
+    name: "Erling Haaland",
+    team: "Man City",
+    league: "Premier League",
+    position: "ST",
+    role: "Poacher",
+    value: 180,
+    stats: {
+      xG: 28.4, xA: 5.2,
+      goals: 32,
+      shots90: 4.1,
+      keyPasses: 1.2,
+      progCarries: 2.1,
+      progPasses: 0.8,
+      dribble: 45,
+      passPct: 78,
+      aerial: 82,
+      tackles: 0.4
+    }
+  },
+  {
+    name: "Bukayo Saka",
+    team: "Arsenal",
+    league: "Premier League",
+    position: "WINGER",
+    role: "Inverted Winger",
+    value: 140,
+    stats: {
+      xG: 12.1, xA: 10.8,
+      goals: 14,
+      shots90: 2.3,
+      keyPasses: 2.8,
+      progCarries: 5.2,
+      progPasses: 3.1,
+      dribble: 72,
+      passPct: 84,
+      aerial: 55,
+      tackles: 1.4
+    }
+  },
 
-<div class="tabs">
-  <button onclick="showTab('player')">Player Search</button>
-  <button onclick="showTab('scout')">Team Scout</button>
-</div>
+  // La Liga
+  {
+    name: "Jude Bellingham",
+    team: "Real Madrid",
+    league: "La Liga",
+    position: "CM",
+    role: "Box-to-Box",
+    value: 160,
+    stats: {
+      xG: 12.3, xA: 9.8,
+      goals: 18,
+      shots90: 2.3,
+      keyPasses: 2.1,
+      progCarries: 6.4,
+      progPasses: 4.2,
+      dribble: 68,
+      passPct: 88,
+      aerial: 70,
+      tackles: 2.0
+    }
+  },
 
-<!-- PLAYER MODE -->
-<div id="player" class="tab">
-  <h2>Player Search</h2>
-  <input id="playerName" placeholder="Enter player name" />
-  <button onclick="searchPlayer()">Search</button>
+  // Bundesliga
+  {
+    name: "Jamal Musiala",
+    team: "Bayern",
+    league: "Bundesliga",
+    position: "CM",
+    role: "Mezzala",
+    value: 140,
+    stats: {
+      xG: 10.1, xA: 7.2,
+      goals: 12,
+      shots90: 2.8,
+      keyPasses: 2.5,
+      progCarries: 7.1,
+      progPasses: 3.3,
+      dribble: 81,
+      passPct: 91,
+      aerial: 60,
+      tackles: 1.1
+    }
+  },
 
-  <div id="playerResult"></div>
-</div>
+  // Serie A
+  {
+    name: "Lautaro Martinez",
+    team: "Inter",
+    league: "Serie A",
+    position: "ST",
+    role: "Pressing Forward",
+    value: 120,
+    stats: {
+      xG: 22.1, xA: 4.1,
+      goals: 24,
+      shots90: 3.7,
+      keyPasses: 1.1,
+      progCarries: 3.0,
+      progPasses: 1.2,
+      dribble: 62,
+      passPct: 80,
+      aerial: 75,
+      tackles: 1.5
+    }
+  }
+];
 
-<!-- SCOUT MODE -->
-<div id="scout" class="tab hidden">
-  <h2>Team Scout</h2>
+// ---------- NORMALISATION (expanded metrics)
+function norm(s) {
+  return {
+    xG: s.xG / 38,
+    xA: s.xA / 38,
+    shotQuality: s.xG / (s.shots90 || 1),
+    creation: (s.keyPasses + s.progPasses) / 10,
+    carry: s.progCarries,
+    dribble: s.dribble,
+    pass: s.passPct,
+    defensive: s.tackles,
+    aerial: s.aerial
+  };
+}
 
-  <select id="position">
-    <option>ST</option>
-    <option>CM</option>
-    <option>CB</option>
-  </select>
+// ---------- TEAM STYLES (real clubs)
+function teamProfile(style) {
+  const map = {
+    "Man City": { possession: 95, pressing: 80 },
+    "Arsenal": { possession: 85, pressing: 85 },
+    "Liverpool": { possession: 70, pressing: 95 },
+    "Real Madrid": { possession: 75, pressing: 85 },
+    "Barcelona": { possession: 95, pressing: 70 },
+    "Bayern": { possession: 80, pressing: 90 },
+    "PSG": { possession: 70, pressing: 75 },
+    "Inter": { possession: 60, pressing: 85 }
+  };
+  return map[style] || { possession: 70, pressing: 70 };
+}
 
-  <select id="style">
-    <option value="possession">Possession</option>
-    <option value="counter">Counter</option>
-  </select>
+// ---------- FIT ENGINE (role-aware)
+function fit(player, position, team) {
+  if (player.position !== position) return 0;
 
-  <button onclick="scout()">Find Players</button>
+  const n = player.n;
 
-  <div id="scoutResults"></div>
-</div>
+  let score = 0;
 
-<script src="app.js"></script>
-</body>
-</html>
+  // possession teams value passing + control
+  score += n.pass * team.possession * 0.4;
+
+  // pressing teams value defensive + workrate
+  score += n.defensive * team.pressing * 0.4;
+
+  // attacking output always matters
+  score += n.xG * 50 + n.xA * 40;
+
+  // role bonuses
+  if (player.role.includes("Winger")) score += n.dribble * 0.5;
+  if (player.role.includes("Box")) score += n.carry * 2;
+  if (player.role.includes("Poacher")) score += n.shotQuality * 40;
+
+  return Math.round(score);
+}
+
+// ---------- REALISM FILTER
+function realism(p) {
+  const leagueWeight = {
+    "Premier League": 95,
+    "La Liga": 90,
+    "Serie A": 85,
+    "Bundesliga": 88,
+    "Ligue 1": 80,
+    "Eredivisie": 70,
+    "Brasileirão": 75,
+    "Liga Argentina": 72
+  };
+
+  const lw = leagueWeight[p.league] || 70;
+  return Math.max(0, 100 - lw + (p.value / 5));
+}
+
+// ---------- SEARCH
+function searchPlayer(name) {
+  const p = PLAYERS.find(x => x.name.toLowerCase() === name.toLowerCase());
+  if (!p) return null;
+
+  p.n = norm(p.stats);
+  return p;
+}
+
+// ---------- SCOUT
+function scout(position, teamName) {
+  const team = teamProfile(teamName);
+
+  return PLAYERS.map(p => {
+    p.n = norm(p.stats);
+
+    const f = fit(p, position, team);
+    const r = realism(p);
+
+    return {
+      name: p.name,
+      team: p.team,
+      role: p.role,
+      fit: f,
+      realism: r,
+      total: f * 0.7 + r * 0.3
+    };
+  }).sort((a,b) => b.total - a.total);
+}
+
+// ---------- UI
+function showPlayer() {
+  const name = document.getElementById("playerName").value;
+  const p = searchPlayer(name);
+
+  document.getElementById("playerResult").innerHTML =
+    p ? `
+      <div class="card">
+        <h3>${p.name}</h3>
+        <p>${p.team} • ${p.league}</p>
+        <p>Role: ${p.role}</p>
+        <p>xG/90: ${p.n.xG.toFixed(2)}</p>
+        <p>xA/90: ${p.n.xA.toFixed(2)}</p>
+        <p>Dribble: ${p.n.dribble}</p>
+        <p>Passing: ${p.n.pass}</p>
+        <p>Aerial: ${p.n.aerial}</p>
+      </div>
+    ` : "<p>Player not found</p>";
+}
+
+function runScout() {
+  const position = document.getElementById("position").value;
+  const team = document.getElementById("team").value;
+
+  const res = scout(position, team);
+
+  document.getElementById("scoutResults").innerHTML =
+    res.map(p => `
+      <div class="card">
+        <h3>${p.name}</h3>
+        <p>${p.team}</p>
+        <p>Role: ${p.role}</p>
+        <p>Fit: ${p.fit}</p>
+        <p>Realism: ${p.realism}</p>
+        <p>Total: ${p.total.toFixed(1)}</p>
+      </div>
+    `).join("");
+}
