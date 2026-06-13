@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Football AI Scout</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>⚽ Football AI Scout (GitHub Pages Edition)</h1>
+
+<div class="tabs">
+  <button onclick="showTab('player')">Player Search</button>
+  <button onclick="showTab('scout')">Team Scout</button>
+</div>
+
+<!-- PLAYER MODE -->
+<div id="player" class="tab">
+  <h2>Player Search</h2>
+  <input id="playerName" placeholder="Enter player name" />
+  <button onclick="searchPlayer()">Search</button>
+
+  <div id="playerResult"></div>
+</div>
+
+<!-- SCOUT MODE -->
+<div id="scout" class="tab hidden">
+  <h2>Team Scout</h2>
+
+  <select id="position">
+    <option>ST</option>
+    <option>CM</option>
+    <option>CB</option>
+  </select>
+
+  <select id="style">
+    <option value="possession">Possession</option>
+    <option value="counter">Counter</option>
+  </select>
+
+  <button onclick="scout()">Find Players</button>
+
+  <div id="scoutResults"></div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
